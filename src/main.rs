@@ -215,18 +215,6 @@ impl App {
     }
 }
 
-// struct Mock;
-
-// #[async_trait::async_trait]
-// impl StateMachine for Mock {
-//     fn generate(&self) -> String {
-//         "Mock".to_string()
-//     }
-//     async fn process(&self, input: String, logit: String) -> Result<(f64, String)> {
-//         Ok((0.0, "Mock".to_string()))
-//     }
-// }
-
 pub fn main() -> Result<()> {
     let config = Config {
         top_box_name: "Word".to_string(),
