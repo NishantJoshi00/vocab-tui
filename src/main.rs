@@ -33,12 +33,12 @@ impl State {
     fn is_input(&self) -> bool {
         matches!(self, State::Input)
     }
-    fn is_processing(&self) -> bool {
-        matches!(self, State::Processing)
-    }
-    fn is_review(&self) -> bool {
-        matches!(self, State::Review)
-    }
+    // fn is_processing(&self) -> bool {
+    //     matches!(self, State::Processing)
+    // }
+    // fn is_review(&self) -> bool {
+    //     matches!(self, State::Review)
+    // }
 }
 
 #[async_trait::async_trait]
@@ -111,6 +111,18 @@ impl App {
             return;
         }
         self.input.push(c);
+    }
+
+    fn on_retry(&mut self) {
+        self.input.clear();
+        let mut shared_state = self
+            .shared_state
+            .write()
+            .expect("Failed to lock shared state");
+        shared_state.explanation.clear();
+        shared_state.score = 0.0;
+        drop(shared_state);
+        *self.state.write().expect("Failed to lock state") = State::Input;
     }
 
     fn ui(&self, f: &mut Frame) {
@@ -192,17 +204,17 @@ impl App {
     }
 }
 
-struct Mock;
+// struct Mock;
 
-#[async_trait::async_trait]
-impl StateMachine for Mock {
-    fn generate(&self) -> String {
-        "Mock".to_string()
-    }
-    async fn process(&self, input: String, logit: String) -> Result<(f64, String)> {
-        Ok((0.0, "Mock".to_string()))
-    }
-}
+// #[async_trait::async_trait]
+// impl StateMachine for Mock {
+//     fn generate(&self) -> String {
+//         "Mock".to_string()
+//     }
+//     async fn process(&self, input: String, logit: String) -> Result<(f64, String)> {
+//         Ok((0.0, "Mock".to_string()))
+//     }
+// }
 
 pub fn main() -> Result<()> {
     let config = Config {
@@ -239,12 +251,16 @@ pub fn main() -> Result<()> {
 
         if event::poll(std::time::Duration::from_millis(50))? {
             if let Event::Key(key) = event::read()? {
-                match key.code {
-                    event::KeyCode::Char(c) => app.on_key(c),
-                    event::KeyCode::Enter => app.on_review(&runtime),
-                    event::KeyCode::Esc => break,
-                    event::KeyCode::Tab => app.on_next(),
-                    event::KeyCode::Backspace => {
+                match (key.code, key.modifiers) {
+                    (event::KeyCode::Char('c'), event::KeyModifiers::CONTROL) => break,
+                    (event::KeyCode::Char('d'), event::KeyModifiers::CONTROL) => break,
+                    (event::KeyCode::Char('r'), event::KeyModifiers::CONTROL) => app.on_retry(),
+                    (event::KeyCode::Delete, _) => app.input.clear(),
+                    (event::KeyCode::Char(c), _) => app.on_key(c),
+                    (event::KeyCode::Enter, _) => app.on_review(&runtime),
+                    (event::KeyCode::Esc, _) => break,
+                    (event::KeyCode::Tab, _) => app.on_next(),
+                    (event::KeyCode::Backspace, _) => {
                         if app.state.read().unwrap().is_input() {
                             app.input.pop();
                         }
