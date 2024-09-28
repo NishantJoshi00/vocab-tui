@@ -8,6 +8,7 @@ use tokio::runtime;
 mod ollama_driver;
 
 struct App {
+    flow_marker: bool,
     config: Config,
     state: Arc<RwLock<State>>,
     input: String,
@@ -55,6 +56,7 @@ struct SlowState {
 impl App {
     fn new(state_machine: Arc<dyn StateMachine>, config: Config) -> Self {
         App {
+            flow_marker: false,
             config,
             state: Arc::new(RwLock::new(State::Input)),
             input: String::new(),
@@ -125,7 +127,7 @@ impl App {
         *self.state.write().expect("Failed to lock state") = State::Input;
     }
 
-    fn ui(&self, f: &mut Frame) {
+    fn ui(&mut self, f: &mut Frame) {
         let style = Style::new()
             .bg(Color::Rgb(0, 0, 0))
             .fg(Color::Rgb(255, 255, 255));
@@ -165,7 +167,16 @@ impl App {
             .direction(Direction::Horizontal)
             .constraints([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)])
             .split(chunks[1]);
-        let input_box = Paragraph::new(self.input.as_str())
+
+        let input_text = if self.flow_marker {
+            self.flow_marker = false;
+            Line::from(vec![self.input.as_str().into(), "_".into()])
+        } else {
+            self.flow_marker = true;
+            Line::from(self.input.as_str())
+        };
+
+        let input_box = Paragraph::new(input_text)
             .block(
                 Block::default()
                     .title(self.config.left_box_name.as_str())
