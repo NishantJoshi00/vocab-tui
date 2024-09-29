@@ -33,12 +33,12 @@ impl StateMachine for OllamaDriver {
     async fn process(&self, input: String, logit: String) -> Result<(f64, String)> {
         let model = "llama3.2:latest";
         let prompt = format!(
-            "Given a word, how well does the following sentence explains what it means?\n\nword: \"{}\"\n\nTell me 3 things:\n1. How well does the sentence describe the word?\n2. Word meaning\n3. Example sentence with the word\n\nThe output should be less than 100 characters.\n\nsentence: \"{}\"", input, logit
+            "Given a word, how well does the sentence explains what it means or convey it's meaning?\n\nword: \"{}\"\n\n1. How well does the sentence describe the word?\n2. Word meaning\n3. Example sentence with the word\n\nThe output should be less than 100 characters.\n\nsentence: \"{}\"", logit, input
         );
 
         let stmt = self.client.generate(
             GenerationRequest::new(model.to_string(), prompt)
-                .options(GenerationOptions::default().temperature(0.5)),
+                .options(GenerationOptions::default().temperature(0.0)),
         );
 
         // let model = "all-minilm";
